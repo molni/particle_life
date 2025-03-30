@@ -361,13 +361,12 @@ impl Particles {
     }
     fn update(&mut self, world: &WorldConfig) {
         for i1 in 0..self.particles.len() {
-            for i2 in 0..self.particles.len() {
-                if i1 != i2 {
-                    let (mut p1, p2) = get_mut2(&mut self.particles, i1, i2);
-                    let vec = in_bounds(p2.pos - p1.pos, world.size);
-                    let dist = vec.norm();
-                    p1.vel += vec.normalize() * force(p1.clr, p2.clr, dist, &world.force_coefs);
-                }
+            for i2 in (i1 + 1)..self.particles.len() {
+                let (mut p1, mut p2) = get_mut2_ordered(&mut self.particles, i1, i2);
+                let vec = in_bounds(p2.pos - p1.pos, world.size);
+                let dist = vec.norm();
+                p1.vel += vec.normalize() * force(p1.clr, p2.clr, dist, &world.force_coefs);
+                p2.vel -= vec.normalize() * force(p2.clr, p1.clr, dist, &world.force_coefs);
             }
         }
 
@@ -423,14 +422,9 @@ fn force(color1: i8, color2: i8, dist: f32, force_coefs: &Vec<Vec<f32>>) -> f32 
 //     0.1
 // }
 
-fn get_mut2<T>(slice: &mut [T], i1: usize, i2: usize) -> (&mut T, &mut T) {
-    if i1 < i2 {
-        let (s1, s2) = slice.split_at_mut(i2);
-        (&mut s1[i1], &mut s2[0])
-    } else {
-        let (s2, s1) = slice.split_at_mut(i1);
-        (&mut s1[0], &mut s2[i2])
-    }
+fn get_mut2_ordered<T>(slice: &mut [T], i1: usize, i2: usize) -> (&mut T, &mut T) {
+    let (s1, s2) = slice.split_at_mut(i2);
+    (&mut s1[i1], &mut s2[0])
 }
 
 // fn apply_forces(mut query1: Query<&mut Particle>, query2: Query<&Particle>) {
